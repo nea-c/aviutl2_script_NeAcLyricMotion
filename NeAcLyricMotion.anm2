@@ -20,7 +20,6 @@
 --check@allow_same_direction:被りあり,false
 --check@fade:フェード,false
 --track@zoom:拡大率,0,1000,100,0.01
---track@blur:ぼかし,-1000,1000,0,0.01
 
 
 
@@ -59,10 +58,10 @@ local function generate_directions(directions, seed, n, allow_same_direction)
 end
 
 
-if RashatDATAS == nil then RashatDATAS = {} end
-if RashatDATAS[obj.effect_id] == nil then RashatDATAS[obj.effect_id] = {} end
+if NeAcLyricMotion == nil then NeAcLyricMotion = {} end
+if NeAcLyricMotion[obj.effect_id] == nil then NeAcLyricMotion[obj.effect_id] = {} end
 if (obj.index == 0) then
-  RashatDATAS[obj.effect_id].directions = generate_directions(enableDirection, seed, obj.num, allow_same_direction)
+  NeAcLyricMotion[obj.effect_id].directions = generate_directions(enableDirection, seed, obj.num, allow_same_direction)
   local numbers = {}
   for i = 0, obj.num - 1 do
     numbers[i] = i
@@ -73,9 +72,9 @@ if (obj.index == 0) then
     j = math.random(i)
     numbers[i], numbers[j] = numbers[j], numbers[i]
   end
-  RashatDATAS[obj.effect_id].order = numbers
+  NeAcLyricMotion[obj.effect_id].order = numbers
 end
-local direction = RashatDATAS[obj.effect_id].directions[obj.index]
+local direction = NeAcLyricMotion[obj.effect_id].directions[obj.index]
 
 
 
@@ -91,37 +90,6 @@ local function sequence(t, delay, index, num)
   return clamp(t * (1 + delay * num) - delay * index)
 end
 
-local function TA_spd(g)
-  g = g or 0
-  local l, i, t = obj.layer, obj.index, obj.time
-  local k = {obj.x * g + obj.ox, obj.y * g + obj.oy, 0, obj.rz}
-  SPD = SPD or {}
-  SPD[l] = SPD[l] or {t = 0}
-  if SPD[l][i] == nil then
-    SPD[l][i] = k
-  end
-  local s = SPD[l][i][3]
-  local r = SPD[l][i][4]
-  local ending = (obj.time == obj.totaltime) and (SPD[l].t <= t)
-  if ending or (SPD[l].t < t) then
-    local x, y = k[1] - SPD[l][i][1], k[2] - SPD[l][i][2]
-    s = math.sqrt(x * x + y * y)
-    s = math.log(s / 10 + 1, 10)
-    if (s > 0) then
-      r = math.deg(math.atan2(y, x)) + 90
-    end
-    SPD[l][i] = {k[1], k[2], s, r}
-    if (i == obj.num - 1) then
-      SPD[l].t = t
-    end
-  elseif (SPD[l].t > t) then
-    SPD[l][i] = k
-    if (i == obj.num - 1) then
-      SPD[l].t = t
-    end
-  end
-  return s, r
-end
 
 local Order = {
   [0] = function()
@@ -137,7 +105,7 @@ local Order = {
     return obj.num - math.abs((obj.num) - obj.index * 2 - 1)
   end,
   function()
-    return RashatDATAS[obj.effect_id].order[obj.index]
+    return NeAcLyricMotion[obj.effect_id].order[obj.index]
   end
 }
 
@@ -192,12 +160,3 @@ zoom = zoom - 100
 obj.zoom = obj.zoom + zoom * 0.01 * va * vector_in + zoom * 0.01 * vector_out
 obj.alpha = obj.alpha * (fade and (1 - math.abs(va)) or (in_out_disable and (1 - ((math.ceil(math.abs(va)*1000)/1000 < 1) and 0 or 1) ) or 1))
 
-
-if (blur > 0) and (va > 0) then
-  obj.effect("ぼかし", "範囲", blur * va)
-elseif (blur < 0) then
-  local s, r = TA_spd(1)
-  local va0 = 1
-  obj.effect("色ずれ", "type", 4, "ずれ幅", -blur * 0.75 * va0, "強さ", s * 100, "角度", r)
-  obj.effect("方向ブラー", "範囲", -blur * s * va0, "角度", r)
-end
